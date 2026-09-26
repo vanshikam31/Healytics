@@ -1104,21 +1104,37 @@ if disease == "Heart Disease":
             step=1
         )
 
-        sex = st.number_input(
+        sex_label = st.selectbox(
             "Sex",
-            min_value=0,
-            max_value=1,
-            value=1,
-            step=1
+            ["Female", "Male"],
+            index=1
         )
 
-        cp = st.number_input(
+        # Dataset encoding: Female = 0, Male = 1
+        sex = 1 if sex_label == "Male" else 0
+
+        cp_label = st.selectbox(
             "Chest pain type",
-            min_value=1,
-            max_value=4,
-            value=1,
-            step=1
+            [
+                "Typical angina",
+                "Atypical angina",
+                "Non-anginal pain",
+                "Asymptomatic"
+            ],
+            index=0
         )
+
+        # Cleveland dataset encoding:
+        # 1 = Typical angina
+        # 2 = Atypical angina
+        # 3 = Non-anginal pain
+        # 4 = Asymptomatic
+        cp = {
+            "Typical angina": 1,
+            "Atypical angina": 2,
+            "Non-anginal pain": 3,
+            "Asymptomatic": 4
+        }[cp_label]
 
         trestbps = st.number_input(
             "Resting blood pressure, mmHg",
@@ -1136,21 +1152,34 @@ if disease == "Heart Disease":
             step=1.0
         )
 
-        fbs = st.number_input(
+        fbs_label = st.selectbox(
             "Fasting blood sugar",
-            min_value=0,
-            max_value=1,
-            value=1,
-            step=1
+            [
+                "≤ 120 mg/dL",
+                "> 120 mg/dL"
+            ],
+            index=1
         )
 
-        restecg = st.number_input(
+        # Dataset encoding: 0 = false, 1 = true
+        fbs = 1 if fbs_label == "> 120 mg/dL" else 0
+
+        restecg_label = st.selectbox(
             "Resting ECG",
-            min_value=0,
-            max_value=2,
-            value=2,
-            step=1
+            [
+                "Normal",
+                "ST-T wave abnormality",
+                "Left ventricular hypertrophy"
+            ],
+            index=2
         )
+
+        # Cleveland dataset encoding: 0, 1, 2
+        restecg = {
+            "Normal": 0,
+            "ST-T wave abnormality": 1,
+            "Left ventricular hypertrophy": 2
+        }[restecg_label]
 
 
     with right_col:
@@ -1163,13 +1192,14 @@ if disease == "Heart Disease":
             step=1.0
         )
 
-        exang = st.number_input(
+        exang_label = st.selectbox(
             "Exercise-induced angina",
-            min_value=0,
-            max_value=1,
-            value=0,
-            step=1
+            ["No", "Yes"],
+            index=0
         )
+
+        # Dataset encoding: 0 = no, 1 = yes
+        exang = 1 if exang_label == "Yes" else 0
 
         oldpeak = st.number_input(
             "ST depression",
@@ -1179,29 +1209,57 @@ if disease == "Heart Disease":
             step=0.1
         )
 
-        slope = st.number_input(
-            "Slope",
-            min_value=1,
-            max_value=3,
-            value=3,
-            step=1
+        slope_label = st.selectbox(
+            "Slope of peak exercise ST segment",
+            [
+                "Upsloping",
+                "Flat",
+                "Downsloping"
+            ],
+            index=2
         )
 
-        ca = st.number_input(
-            "Major vessels",
-            min_value=0,
-            max_value=4,
-            value=0,
-            step=1
+        # Cleveland dataset encoding: 1 = upsloping, 2 = flat, 3 = downsloping
+        slope = {
+            "Upsloping": 1,
+            "Flat": 2,
+            "Downsloping": 3
+        }[slope_label]
+
+        ca_label = st.selectbox(
+            "Major vessels colored by fluoroscopy",
+            [
+                "0 vessels",
+                "1 vessel",
+                "2 vessels",
+                "3 vessels"
+            ],
+            index=0
         )
 
-        thal = st.number_input(
+        ca = {
+            "0 vessels": 0,
+            "1 vessel": 1,
+            "2 vessels": 2,
+            "3 vessels": 3
+        }[ca_label]
+
+        thal_label = st.selectbox(
             "Thalassemia",
-            min_value=3,
-            max_value=7,
-            value=6,
-            step=1
+            [
+                "Normal",
+                "Fixed defect",
+                "Reversible defect"
+            ],
+            index=1
         )
+
+        # Cleveland dataset encoding: 3 = normal, 6 = fixed defect, 7 = reversible defect
+        thal = {
+            "Normal": 3,
+            "Fixed defect": 6,
+            "Reversible defect": 7
+        }[thal_label]
 
 
     st.write("")
@@ -1374,9 +1432,9 @@ if disease == "Heart Disease":
 
                 factor_row(
                     "Exercise-induced angina",
-                    "Present"
+                    "Yes"
                     if exang == 1
-                    else "Not reported",
+                    else "No",
                     exang == 1
                 ),
 
