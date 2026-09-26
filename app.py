@@ -1,14 +1,23 @@
 import streamlit as st
 import sys
 import os
+import time
+
 
 # ============================================================
-# HELPER FOR SAFE HTML RENDERING
+# HTML HELPERS
 # ============================================================
 
-def render_html(html_code: str):
-    """Renders pure HTML without Streamlit parsing issues."""
-    st.html(html_code)
+def flatten_html(html):
+    lines = html.strip("\n").split("\n")
+    return "\n".join(line.lstrip() for line in lines)
+
+
+def render_html(html):
+    st.markdown(
+        flatten_html(html),
+        unsafe_allow_html=True
+    )
 
 
 # ============================================================
@@ -21,7 +30,12 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 
+# ============================================================
+# PREDICTORS
+# ============================================================
+
 from src.prediction.diabetes_predictor import predict_diabetes
+from src.prediction.heart_disease_predictor import predict_heart_disease
 
 
 # ============================================================
@@ -37,578 +51,1829 @@ st.set_page_config(
 
 
 # ============================================================
-# CUSTOM CSS — Matches Exact Reference Images
+# CUSTOM CSS
 # ============================================================
 
-st.html("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,380;0,9..144,500;0,9..144,600;1,9..144,420&family=Inter:wght@300;400;500;600&display=swap');
+render_html(
+    """
+    <style>
 
-:root {
-    --ink: #0B1917;
-    --ink-card: #081211;
-    --bone: #F1ECE0;
-    --bone-dim: #98A5A0;
-    --gold: #D9A441;
-    --rose: #C56A52;
-    --moss: #7E9A78;
-    --line: rgba(241, 236, 224, 0.12);
-}
+    @import url(
+        'https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,380;0,9..144,500;0,9..144,600;1,9..144,420&family=Inter:wght@400;500;600&display=swap'
+    );
 
-html, body, [data-testid="stAppViewContainer"] {
-    background-color: var(--ink);
-    color: var(--bone);
-    font-family: 'Inter', sans-serif;
-}
+    :root {
+        --ink: #0E211E;
+        --ink-2: #15302B;
+        --bone: #F1ECE0;
+        --bone-dim: #C9C2AE;
+        --gold: #D9A441;
+        --rose: #C56A52;
+        --moss: #7E9A78;
+        --line: rgba(241, 236, 224, 0.14);
+    }
 
-[data-testid="stHeader"] {
-    background-color: var(--ink);
-}
+    html,
+    body,
+    [data-testid="stAppViewContainer"] {
+        background-color: var(--ink);
+        color: var(--bone);
+        font-family: 'Inter', sans-serif;
+    }
 
-[data-testid="stToolbar"] {
-    display: none;
-}
+    [data-testid="stHeader"] {
+        background-color: var(--ink);
+    }
 
-.block-container {
-    max-width: 1100px;
-    padding-top: 0;
-    padding-bottom: 70px;
-}
+    [data-testid="stToolbar"] {
+        display: none;
+    }
 
-#MainMenu, footer {
-    visibility: hidden;
-}
+    .block-container {
+        max-width: 1080px;
+        padding-top: 0;
+        padding-bottom: 70px;
+    }
 
-/* TOP NAV */
-.top-nav {
-    height: 70px;
-    border-bottom: 1px solid var(--line);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-left: -5rem;
-    margin-right: -5rem;
-    padding-left: 5rem;
-    padding-right: 5rem;
-    margin-bottom: 70px;
-}
+    .project-name {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 32px;
+        font-style: italic;
+        color: #e8e3d8;
+        text-align: center;
+        margin: 30px 0;
+        letter-spacing: 1px;
+    }
 
-.brand {
-    font-family: 'Fraunces', serif;
-    font-size: 22px;
-    font-style: italic;
-    font-weight: 500;
-    color: var(--bone);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
+    #MainMenu {
+        visibility: hidden;
+    }
 
-.brand-mark {
-    color: var(--gold);
-    font-size: 16px;
-}
+    footer {
+        visibility: hidden;
+    }
 
-.nav-links {
-    display: flex;
-    align-items: center;
-    gap: 32px;
-    color: var(--bone);
-    font-size: 14px;
-    font-weight: 400;
-}
 
-.nav-signin {
-    border: 1px solid var(--line);
-    border-radius: 100px;
-    padding: 7px 20px;
-    color: var(--bone);
-    font-size: 13.5px;
-}
+    /* ========================================================
+       NAVIGATION
+       ======================================================== */
 
-/* HERO */
-.hero {
-    position: relative;
-    padding: 20px 0 90px 0;
-}
+    .top-nav {
+        height: 68px;
+        border-bottom: 1px solid var(--line);
 
-.eyebrow {
-    font-family: 'Fraunces', serif;
-    font-size: 15px;
-    font-style: italic;
-    color: var(--gold);
-    margin-bottom: 24px;
-}
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
 
-.hero-title {
-    max-width: 680px;
-    font-family: 'Fraunces', serif;
-    font-size: 58px;
-    line-height: 1.08;
-    font-weight: 500;
-    letter-spacing: -0.5px;
-    color: var(--bone);
-    margin: 0 0 24px 0;
-}
+        margin-left: -5rem;
+        margin-right: -5rem;
 
-.hero-description {
-    max-width: 580px;
-    color: var(--bone-dim);
-    font-size: 15.5px;
-    line-height: 1.65;
-    margin-bottom: 36px;
-}
+        padding-left: 5rem;
+        padding-right: 5rem;
 
-.hero-cta-group {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-}
+        margin-bottom: 80px;
+    }
 
-.hero-btn {
-    background-color: var(--gold);
-    color: var(--ink);
-    padding: 12px 28px;
-    border-radius: 100px;
-    font-weight: 600;
-    font-size: 14px;
-    text-decoration: none;
-    display: inline-block;
-}
+    .brand {
+        font-family: 'Fraunces', serif;
+        font-size: 22px;
+        font-style: italic;
+        font-weight: 500;
+        color: var(--bone);
+    }
 
-.hero-link {
-    color: var(--bone-dim);
-    font-size: 13.5px;
-    text-decoration: underline;
-    text-underline-offset: 4px;
-}
+    .brand-mark {
+        color: var(--gold);
+        margin-right: 9px;
+        font-size: 16px;
+    }
 
-.ecg {
-    position: absolute;
-    left: -10%;
-    right: -10%;
-    bottom: 50px;
-    height: 110px;
-    opacity: 0.25;
-    pointer-events: none;
-    z-index: 0;
-}
+    .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 38px;
+        color: var(--bone-dim);
+        font-size: 13.5px;
+    }
 
-.ecg svg {
-    width: 100%;
-    height: 100%;
-}
+    .nav-signin {
+        border: 1px solid var(--line);
+        border-radius: 100px;
+        padding: 8px 20px;
+        color: var(--bone);
+        font-size: 13.5px;
+    }
 
-.ecg polyline {
-    fill: none;
-    stroke: var(--gold);
-    stroke-width: 1.2;
-}
 
-/* INDEX */
-.index-section {
-    margin-top: 60px;
-    margin-bottom: 100px;
-}
+    /* ========================================================
+       HERO
+       ======================================================== */
 
-.section-eyebrow {
-    font-family: 'Fraunces', serif;
-    font-style: italic;
-    color: var(--gold);
-    font-size: 14px;
-    margin-bottom: 10px;
-}
+    .hero {
+        position: relative;
+        padding: 10px 0 85px 0;
+        overflow: hidden;
+    }
 
-.section-title {
-    font-family: 'Fraunces', serif;
-    font-size: 32px;
-    font-weight: 500;
-    color: var(--bone);
-    margin-bottom: 40px;
-}
+    .eyebrow {
+        font-family: 'Fraunces', serif;
+        font-size: 14px;
+        font-style: italic;
+        color: var(--gold);
+        margin-bottom: 18px;
+    }
 
-.disease-list {
-    border-top: 1px solid var(--line);
-}
+    .hero-title {
+        max-width: 640px;
 
-.disease-row {
-    display: grid;
-    grid-template-columns: 60px 1fr 140px;
-    align-items: center;
-    padding: 24px 0;
-    border-bottom: 1px solid var(--line);
-}
+        font-family: 'Fraunces', serif;
+        font-size: 56px;
+        line-height: 1.06;
+        font-weight: 500;
+        letter-spacing: -0.3px;
 
-.disease-number {
-    font-family: 'Fraunces', serif;
-    font-style: italic;
-    font-size: 16px;
-    color: var(--bone-dim);
-}
+        color: var(--bone);
 
-.disease-name {
-    font-family: 'Fraunces', serif;
-    font-size: 24px;
-    font-weight: 500;
-    color: var(--bone);
-    margin-bottom: 4px;
-}
+        margin: 0 0 22px 0;
+    }
 
-.disease-description {
-    font-size: 13.5px;
-    color: var(--bone-dim);
-}
+    .hero-description {
+        max-width: 600px;
 
-.disease-meta {
-    text-align: right;
-    color: var(--bone-dim);
-    font-size: 13px;
-    line-height: 1.4;
-}
+        color: var(--bone-dim);
+        font-size: 16.5px;
+        line-height: 1.65;
 
-/* INPUT FORM & RESULT CARD SECTION */
-.module-header {
-    margin-bottom: 30px;
-}
+        margin-bottom: 30px;
+    }
 
-.module-label {
-    font-family: 'Fraunces', serif;
-    font-style: italic;
-    color: var(--gold);
-    font-size: 14px;
-    margin-bottom: 8px;
-}
 
-.module-title {
-    font-family: 'Fraunces', serif;
-    font-size: 28px;
-    font-weight: 500;
-    color: var(--bone);
-    margin-bottom: 6px;
-}
+    /* ========================================================
+       ECG
+       ======================================================== */
 
-.module-sub {
-    color: var(--bone-dim);
-    font-size: 14px;
-}
+    .ecg {
+        position: absolute;
+        left: -8%;
+        right: -8%;
+        bottom: 35px;
 
-/* INPUT STYLES */
-div[data-baseweb="input"] {
-    background-color: transparent !important;
-    border: none !important;
-    border-bottom: 1px solid var(--line) !important;
-    border-radius: 0 !important;
-}
+        height: 115px;
 
-div[data-baseweb="input"]:focus-within {
-    border-bottom: 1px solid var(--gold) !important;
-}
+        opacity: 0.45;
+        pointer-events: none;
+    }
 
-input {
-    color: var(--bone) !important;
-    background-color: transparent !important;
-    font-family: 'Fraunces', serif !important;
-    font-size: 18px !important;
-    padding-left: 0 !important;
-}
+    .ecg svg {
+        width: 100%;
+        height: 100%;
+    }
 
-label {
-    color: var(--bone-dim) !important;
-    font-size: 12px !important;
-    font-weight: 400 !important;
-}
+    .ecg polyline {
+        fill: none;
+        stroke: var(--gold);
+        stroke-width: 1.3;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+    }
 
-div[data-testid="stNumberInput"] {
-    margin-bottom: 20px;
-}
 
-/* BUTTON */
-div.stButton > button {
-    background-color: var(--gold) !important;
-    color: var(--ink) !important;
-    border: none !important;
-    border-radius: 100px !important;
-    padding: 12px 28px !important;
-    font-family: 'Inter', sans-serif !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    margin-top: 15px;
-}
+    /* ========================================================
+       DISCLAIMER
+       ======================================================== */
 
-div.stButton > button:hover {
-    background-color: #e8bb58 !important;
-    color: var(--ink) !important;
-}
+    .disclaimer {
+        border: 1px solid var(--line);
+        background: var(--ink-2);
 
-/* RESULT CARD */
-.result-card {
-    background-color: var(--ink-card);
-    border: 1px solid var(--line);
-    padding: 36px;
-    border-radius: 2px;
-}
+        padding: 18px 22px;
+        margin-bottom: 85px;
 
-.result-top {
-    display: flex;
-    justify-content: space-between;
-    color: var(--bone-dim);
-    font-size: 13px;
-    margin-bottom: 24px;
-}
+        color: var(--bone-dim);
+        font-size: 13px;
+        line-height: 1.6;
+    }
 
-.result-probability {
-    font-family: 'Fraunces', serif;
-    font-size: 72px;
-    line-height: 1;
-    font-weight: 500;
-    color: var(--bone);
-    margin-bottom: 8px;
-}
+    .disclaimer strong {
+        color: var(--gold);
+        font-weight: 500;
+    }
 
-.result-label {
-    color: var(--bone-dim);
-    font-size: 13px;
-    margin-bottom: 24px;
-}
 
-.gauge-bar {
-    height: 2px;
-    background: var(--line);
-    margin-bottom: 24px;
-    position: relative;
-}
+    /* ========================================================
+       SECTION HEADINGS
+       ======================================================== */
 
-.gauge-fill {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-}
+    .section-eyebrow {
+        font-family: 'Fraunces', serif;
+        font-style: italic;
 
-.result-status {
-    font-family: 'Fraunces', serif;
-    font-size: 16px;
-    font-style: italic;
-    margin-bottom: 28px;
-}
+        color: var(--gold);
+        font-size: 14px;
 
-.status-high { color: var(--rose); }
-.status-low { color: var(--moss); }
+        margin-bottom: 10px;
+    }
 
-.factor {
-    display: flex;
-    justify-content: space-between;
-    padding: 12px 0;
-    border-top: 1px solid var(--line);
-    font-size: 13.5px;
-}
+    .section-title {
+        font-family: 'Fraunces', serif;
 
-.factor:last-of-type {
-    border-bottom: 1px solid var(--line);
-    margin-bottom: 28px;
-}
+        font-size: 30px;
+        line-height: 1.1;
 
-.factor-name { color: var(--bone); }
-.flag-high { color: var(--rose); }
-.flag-ok { color: var(--bone-dim); }
+        font-weight: 500;
 
-.result-note {
-    color: var(--bone-dim);
-    font-size: 12px;
-    font-style: italic;
-    font-family: 'Fraunces', serif;
-    line-height: 1.5;
-}
-</style>
-""")
+        color: var(--bone);
+
+        margin-bottom: 35px;
+    }
+
+
+    /* ========================================================
+       DISEASE INDEX
+       ======================================================== */
+
+    .disease-list {
+        border-top: 1px solid var(--line);
+        margin-bottom: 100px;
+    }
+
+    .disease-row {
+        display: grid;
+        grid-template-columns: 64px 1fr 140px;
+
+        align-items: center;
+
+        min-height: 92px;
+
+        border-bottom: 1px solid var(--line);
+    }
+
+    .disease-number {
+        font-family: 'Fraunces', serif;
+        font-style: italic;
+        font-size: 15px;
+        color: var(--bone-dim);
+    }
+
+    .disease-name {
+        font-family: 'Fraunces', serif;
+        font-size: 22px;
+        font-weight: 500;
+        color: var(--bone);
+
+        transition: color 0.15s ease;
+    }
+
+    .disease-row:hover .disease-name {
+        color: var(--gold);
+    }
+
+    .disease-description {
+        font-size: 13px;
+        color: var(--bone-dim);
+        margin-top: 4px;
+    }
+
+    .disease-meta {
+        text-align: right;
+        color: var(--bone-dim);
+        font-size: 12.5px;
+        line-height: 1.5;
+    }
+
+    .available {
+        color: var(--moss);
+        font-weight: 500;
+    }
+
+
+    /* ========================================================
+       SELECTOR
+       ======================================================== */
+
+    .select-label {
+        color: var(--bone-dim);
+        font-size: 13px;
+        margin-bottom: 8px;
+    }
+
+
+    /* ========================================================
+       PREDICTION MODULE
+       ======================================================== */
+
+    .prediction-section {
+        margin-top: 10px;
+        margin-bottom: 50px;
+    }
+
+    .module-label {
+        font-family: 'Fraunces', serif;
+        font-style: italic;
+
+        color: var(--gold);
+        font-size: 14px;
+
+        margin-bottom: 6px;
+    }
+
+    .module-title {
+        font-family: 'Fraunces', serif;
+
+        font-size: 24px;
+        font-weight: 500;
+
+        color: var(--bone);
+
+        margin-bottom: 6px;
+    }
+
+    .module-description {
+        color: var(--bone-dim);
+        font-size: 13.5px;
+        margin-bottom: 30px;
+    }
+
+
+    /* ========================================================
+       PIPELINE
+       ======================================================== */
+
+    .pipeline-strip {
+        display: flex;
+        align-items: stretch;
+
+        margin-bottom: 34px;
+
+        border: 1px solid var(--line);
+    }
+
+    .pstep {
+        flex: 1;
+
+        display: flex;
+        align-items: center;
+
+        gap: 10px;
+
+        padding: 14px 16px;
+
+        border-right: 1px solid var(--line);
+
+        font-size: 12.5px;
+        color: var(--bone-dim);
+
+        transition:
+            background 0.3s ease,
+            color 0.3s ease;
+    }
+
+    .pstep:last-child {
+        border-right: none;
+    }
+
+    .pstep-no {
+        width: 20px;
+        height: 20px;
+
+        flex: none;
+
+        border-radius: 50%;
+
+        border: 1px solid var(--line);
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        font-family: 'Fraunces', serif;
+        font-size: 11px;
+    }
+
+    .pstep.active .pstep-no {
+        background: var(--gold);
+        border-color: var(--gold);
+        color: var(--ink);
+    }
+
+    .pstep.active {
+        color: var(--bone);
+    }
+
+    .pstep.done .pstep-no {
+        background: var(--moss);
+        border-color: var(--moss);
+        color: var(--ink);
+    }
+
+
+    /* ========================================================
+       INPUTS
+       ======================================================== */
+
+    div[data-baseweb="input"] {
+        background-color: transparent;
+        border: none;
+        border-bottom: 1px solid var(--line);
+        border-radius: 0;
+    }
+
+    div[data-baseweb="input"]:focus-within {
+        border-bottom: 1px solid var(--gold);
+    }
+
+    input {
+        color: var(--bone) !important;
+        background-color: transparent !important;
+
+        font-family: 'Fraunces', serif !important;
+        font-size: 16px !important;
+    }
+
+    label {
+        color: var(--bone-dim) !important;
+        font-size: 12px !important;
+    }
+
+    div[data-testid="stNumberInput"] {
+        margin-bottom: 15px;
+    }
+
+
+    /* ========================================================
+       SELECTBOX
+       ======================================================== */
+
+    div[data-baseweb="select"] > div {
+        background-color: var(--ink-2);
+        border: 1px solid var(--line);
+        border-radius: 0;
+    }
+
+    div[data-baseweb="select"] span {
+        color: var(--bone);
+    }
+
+
+    /* ========================================================
+       BUTTON
+       ======================================================== */
+
+    div.stButton > button {
+        background-color: var(--gold);
+
+        color: var(--ink);
+
+        border: none;
+        border-radius: 100px;
+
+        padding: 12px 26px;
+
+        font-family: 'Inter', sans-serif;
+        font-size: 14.5px;
+        font-weight: 600;
+
+        transition: all 0.2s ease;
+    }
+
+    div.stButton > button:hover {
+        background-color: #e8bb58;
+        color: var(--ink);
+        border: none;
+    }
+
+
+    /* ========================================================
+       RESULT CARD
+       ======================================================== */
+
+    .result-card {
+        background-color: var(--ink-2);
+        border: 1px solid var(--line);
+
+        padding: 34px;
+
+        min-height: 420px;
+
+        margin-top: 5px;
+    }
+
+    .result-top {
+        display: flex;
+        justify-content: space-between;
+
+        color: var(--bone-dim);
+        font-size: 12.5px;
+
+        margin-bottom: 26px;
+    }
+
+    .result-probability {
+        font-family: 'Fraunces', serif;
+
+        font-size: 64px;
+        line-height: 1;
+
+        font-weight: 500;
+
+        color: var(--bone);
+
+        margin-bottom: 6px;
+    }
+
+    .result-label {
+        color: var(--bone-dim);
+        font-size: 13px;
+    }
+
+    .gauge-bar {
+        height: 3px;
+        background: var(--line);
+
+        margin: 24px 0 26px;
+
+        position: relative;
+    }
+
+    .gauge-fill {
+        position: absolute;
+
+        top: 0;
+        left: 0;
+
+        height: 100%;
+    }
+
+    .result-status {
+        font-family: 'Fraunces', serif;
+
+        font-size: 17px;
+        font-style: italic;
+
+        margin-bottom: 22px;
+    }
+
+    .status-high {
+        color: var(--rose);
+    }
+
+    .status-low {
+        color: var(--moss);
+    }
+
+    .factor {
+        display: flex;
+        justify-content: space-between;
+
+        padding: 11px 0;
+
+        border-top: 1px solid var(--line);
+
+        font-size: 13.5px;
+    }
+
+    .factor:last-of-type {
+        border-bottom: 1px solid var(--line);
+    }
+
+    .factor span:last-child {
+        color: var(--bone-dim);
+    }
+
+    .flag-high {
+        color: var(--rose) !important;
+    }
+
+    .flag-ok {
+        color: var(--moss) !important;
+    }
+
+    .result-note {
+        color: var(--bone-dim);
+
+        font-size: 11.5px;
+        font-style: italic;
+
+        font-family: 'Fraunces', serif;
+
+        line-height: 1.6;
+
+        margin-top: 22px;
+    }
+
+
+    /* ========================================================
+       COMING SOON
+       ======================================================== */
+
+    .coming-soon {
+        border: 1px solid var(--line);
+        background: var(--ink-2);
+
+        padding: 30px;
+
+        margin-top: 20px;
+
+        color: var(--bone-dim);
+    }
+
+    .coming-soon-title {
+        font-family: 'Fraunces', serif;
+
+        font-size: 26px;
+        font-weight: 500;
+
+        color: var(--bone);
+
+        margin-bottom: 8px;
+    }
+
+
+    /* ========================================================
+       FOOTER
+       ======================================================== */
+
+    .footer {
+        border-top: 1px solid var(--line);
+
+        padding-top: 25px;
+
+        color: var(--bone-dim);
+
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    .footer strong {
+        color: var(--bone);
+    }
+
+
+    /* ========================================================
+       MOBILE
+       ======================================================== */
+
+    @media (max-width: 768px) {
+
+        .block-container {
+            padding-left: 25px;
+            padding-right: 25px;
+        }
+
+        .top-nav {
+            margin-left: -25px;
+            margin-right: -25px;
+
+            padding-left: 25px;
+            padding-right: 25px;
+        }
+
+        .nav-links {
+            display: none;
+        }
+
+        .hero-title {
+            font-size: 40px;
+        }
+
+        .disease-row {
+            grid-template-columns: 40px 1fr;
+            padding: 18px 0;
+        }
+
+        .disease-meta {
+            display: none;
+        }
+
+        .result-card {
+            margin-top: 30px;
+        }
+
+        .pipeline-strip {
+            flex-direction: column;
+        }
+
+        .pstep {
+            border-right: none;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .pstep:last-child {
+            border-bottom: none;
+        }
+    }
+
+    </style>
+    """
+)
 
 
 # ============================================================
 # TOP NAVIGATION
 # ============================================================
 
-render_html("""
-<div class="top-nav">
-    <div class="brand">
-        <span class="brand-mark">∿</span> Healytics
+render_html(
+    """
+    <div class="top-nav">
+
+        <div class="brand">
+            <span class="brand-mark">⌁</span>
+            Healytics
+        </div>
+
+        <div class="nav-links">
+            <span>Screenings</span>
+            <span>Assess</span>
+            <span>Model insights</span>
+            <span class="nav-signin">Project demo</span>
+        </div>
+
     </div>
-    <div class="nav-links">
-        <span>Screenings</span>
-        <span>Assess</span>
-        <span>Clinician view</span>
-        <span class="nav-signin">Sign in</span>
-    </div>
-</div>
-""")
+    """
+)
 
 
 # ============================================================
-# HERO SECTION (Image 1)
+# HERO
 # ============================================================
 
-render_html("""
-<section class="hero">
-    <div class="eyebrow">A screening companion, not a diagnosis</div>
-    <h1 class="hero-title">Four readings of one body, in a single sitting</h1>
-    <p class="hero-description">
-        Enter values from a routine panel and Healytics runs them through four clinically-grounded models — diabetes to breast cancer — surfacing what's worth a conversation with your doctor.
-    </p>
-    <div class="hero-cta-group">
-        <a href="#assessment" class="hero-btn">Begin an assessment</a>
-        <a href="#index" class="hero-link">See all four models</a>
+render_html(
+    """
+    <section class="hero">
+
+        <div class="eyebrow">
+            A screening companion, not a diagnosis
+        </div>
+
+        <h1 class="hero-title">
+            Multi-disease risk prediction,<br>
+            in a single workspace
+        </h1>
+
+        <p class="hero-description">
+            Healytics uses machine learning models to estimate disease risk
+            from structured health-related inputs and present the result in a
+            clear, interpretable format — surfacing what is worth a
+            conversation with your doctor.
+        </p>
+
+        <div class="ecg">
+            <svg viewBox="0 0 1200 120"
+                 preserveAspectRatio="none">
+
+                <polyline points="
+                    0,75
+                    35,75
+                    50,60
+                    68,75
+                    95,75
+                    108,112
+                    126,15
+                    145,105
+                    164,75
+                    215,75
+                    235,52
+                    260,75
+                    300,75
+                    330,75
+                    350,60
+                    370,75
+                    405,75
+                    420,112
+                    438,15
+                    457,105
+                    476,75
+                    530,75
+                    550,55
+                    575,75
+                    620,75
+                    650,75
+                    670,60
+                    690,75
+                    725,75
+                    740,112
+                    758,15
+                    777,105
+                    796,75
+                    850,75
+                    870,52
+                    895,75
+                    940,75
+                    970,75
+                    990,60
+                    1010,75
+                    1045,75
+                    1060,112
+                    1078,15
+                    1097,105
+                    1116,75
+                    1200,75
+                " />
+
+            </svg>
+        </div>
+
+    </section>
+    """
+)
+
+
+# ============================================================
+# DISCLAIMER
+# ============================================================
+
+render_html(
+    """
+    <div class="disclaimer">
+        <strong>Medical Disclaimer</strong><br>
+        Healytics is intended for educational and decision-support purposes
+        only. Predictions are not medical diagnoses and should not replace
+        professional medical advice.
     </div>
-    <div class="ecg">
-        <svg viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <polyline points="0,75 35,75 50,60 68,75 95,75 108,112 126,15 145,105 164,75 215,75 235,52 260,75 300,75 330,75 350,60 370,75 405,75 420,112 438,15 457,105 476,75 530,75 550,55 575,75 620,75 650,75 670,60 690,75 725,75 740,112 758,15 777,105 796,75 850,75 870,52 895,75 940,75 970,75 990,60 1010,75 1045,75 1060,112 1078,15 1097,105 1116,75 1200,75" />
-        </svg>
+    """
+)
+
+
+# ============================================================
+# DISEASE INDEX
+# ============================================================
+
+render_html(
+    """
+    <div class="section-eyebrow">
+        The index
     </div>
-</section>
-""")
+
+    <div class="section-title">
+        Two conditions, one prediction workspace
+    </div>
+    """
+)
 
 
-# ============================================================
-# INDEX SECTION (Image 2)
-# ============================================================
-
-render_html("""
-<div id="index" class="index-section">
-    <div class="section-eyebrow">The index</div>
-    <div class="section-title">Four conditions, one intake</div>
+render_html(
+    """
     <div class="disease-list">
+
         <div class="disease-row">
+
             <div class="disease-number">01</div>
+
             <div>
-                <div class="disease-name">Diabetes</div>
-                <div class="disease-description">Type 2 risk from glucose, BMI, and family history</div>
+                <div class="disease-name">
+                    Heart Disease
+                </div>
+
+                <div class="disease-description">
+                    Cardiovascular risk prediction from clinical health features
+                </div>
             </div>
-            <div class="disease-meta">2 min<br>8 values</div>
+
+            <div class="disease-meta available">
+                Available<br>
+                13 inputs
+            </div>
+
         </div>
+
+
         <div class="disease-row">
+
             <div class="disease-number">02</div>
+
             <div>
-                <div class="disease-name">Heart disease</div>
-                <div class="disease-description">Coronary risk from ECG, cholesterol, chest pain type</div>
+                <div class="disease-name">
+                    Diabetes
+                </div>
+
+                <div class="disease-description">
+                    Risk prediction using glucose, BMI and related health features
+                </div>
             </div>
-            <div class="disease-meta">4 min<br>13 values</div>
+
+            <div class="disease-meta available">
+                Available<br>
+                8 inputs
+            </div>
+
         </div>
+
+
         <div class="disease-row">
+
             <div class="disease-number">03</div>
+
             <div>
-                <div class="disease-name">Parkinson's</div>
-                <div class="disease-description">Early motor signs from voice frequency measures</div>
+                <div class="disease-name">
+                    Liver Disease
+                </div>
+
+                <div class="disease-description">
+                    Risk prediction from biochemical and demographic features
+                </div>
             </div>
-            <div class="disease-meta">1 min<br>voice sample</div>
-        </div>
-        <div class="disease-row">
-            <div class="disease-number">04</div>
-            <div>
-                <div class="disease-name">Breast cancer</div>
-                <div class="disease-description">Malignancy likelihood from cell nuclei measurements</div>
+
+            <div class="disease-meta">
+                Coming soon<br>
+                10 inputs
             </div>
-            <div class="disease-meta">lab upload<br>30 values</div>
+
         </div>
+
     </div>
-</div>
-""")
+    """
+)
 
 
 # ============================================================
-# INTAKE & PREDICTION CARD (Image 3)
+# DISEASE SELECTOR
 # ============================================================
 
-render_html("""
-<div id="assessment" class="module-header">
-    <div class="module-label">01 — Diabetes</div>
-    <div class="module-title">Patient values</div>
-    <div class="module-sub">From a recent basic metabolic panel and a home cuff reading.</div>
-</div>
-""")
+render_html(
+    '<div class="select-label">Prediction module</div>'
+)
 
-left_col, right_col = st.columns([1.05, 0.95], gap="large")
+disease = st.selectbox(
+    "Select disease",
+    [
+        "— Select a condition —",
+        "Heart Disease",
+        "Diabetes",
+        "Liver Disease"
+    ],
+    label_visibility="collapsed"
+)
 
-with left_col:
-    p_col1, p_col2 = st.columns(2)
-    with p_col1:
-        pregnancies = st.number_input("Pregnancies", min_value=0, max_value=20, value=2, step=1)
-        glucose = st.number_input("Glucose, mg/dL", min_value=0.0, max_value=300.0, value=142.0, step=1.0)
-        bmi = st.number_input("BMI", min_value=0.0, max_value=70.0, value=29.4, step=0.1)
-        insulin = st.number_input("Insulin, µU/mL", min_value=0.0, max_value=900.0, value=118.0, step=1.0)
 
-    with p_col2:
-        age = st.number_input("Age, years", min_value=1, max_value=120, value=41, step=1)
-        blood_pressure = st.number_input("Blood pressure, mmHg", min_value=0.0, max_value=200.0, value=86.0, step=1.0)
-        skin_thickness = st.number_input("Skin thickness, mm", min_value=0.0, max_value=100.0, value=24.0, step=1.0)
-        diabetes_pedigree = st.number_input("Family history score", min_value=0.0, max_value=3.0, value=0.52, step=0.01)
+# ============================================================
+# COMMON PIPELINE
+# ============================================================
 
-    predict_button = st.button("Run this screening")
+PIPELINE_STEPS = [
+    "Raw input captured",
+    "Missing readings imputed",
+    "Features standardized",
+    "Model inference",
+]
 
-with right_col:
-    # Default values or dynamic upon button click
-    input_data = {
-        "Pregnancies": pregnancies,
-        "Glucose": glucose,
-        "BloodPressure": blood_pressure,
-        "SkinThickness": skin_thickness,
-        "Insulin": insulin,
-        "BMI": bmi,
-        "DiabetesPedigreeFunction": diabetes_pedigree,
-        "Age": age
-    }
 
-    try:
-        if predict_button:
-            result = predict_diabetes(input_data)
-            probability = result["probability"]
-            prediction = result["prediction"]
-        else:
-            # Default preview matching Image 3 (34%)
-            probability = 0.34
-            prediction = 0
+def render_pipeline_strip(
+    placeholder,
+    active_index=-1,
+    done_until=-1
+):
 
-        is_high_risk = probability >= 0.5 or prediction == 1
-        pct = int(probability * 100)
-        fill_color = "#C56A52" if is_high_risk else "#C56A52" # Match Image 3 muted rose bar
+    rows = ""
 
-        status_text = "Moderate — worth a follow-up" if 0.3 <= probability < 0.6 else ("Elevated risk — follow-up advised" if probability >= 0.6 else "Low risk — within expected range")
-        status_class = "status-high" if probability >= 0.3 else "status-low"
+    for i, label in enumerate(PIPELINE_STEPS):
 
-        factors_html = f"""
-        <div class="factor">
-            <span class="factor-name">Glucose</span>
-            <span class="{"flag-high" if glucose >= 140 else "flag-ok"}">{"Above typical range" if glucose >= 140 else "Within range"}</span>
-        </div>
-        <div class="factor">
-            <span class="factor-name">BMI</span>
-            <span class="{"flag-high" if bmi >= 25 else "flag-ok"}">{"Contributing factor" if bmi >= 25 else "Within range"}</span>
-        </div>
-        <div class="factor">
-            <span class="factor-name">Family history</span>
-            <span class="{"flag-high" if diabetes_pedigree >= 0.5 else "flag-ok"}">{"Elevated" if diabetes_pedigree >= 0.5 else "Within range"}</span>
-        </div>
-        <div class="factor">
-            <span class="factor-name">Blood pressure</span>
-            <span class="{"flag-high" if blood_pressure >= 90 else "flag-ok"}">{"Above typical range" if blood_pressure >= 90 else "Within range"}</span>
+        state = ""
+
+        if i <= done_until:
+            state = "done"
+
+        elif i == active_index:
+            state = "active"
+
+        rows += (
+            f'<div class="pstep {state}">'
+            f'<span class="pstep-no">{i + 1}</span>'
+            f'<span>{label}</span>'
+            f'</div>'
+        )
+
+    placeholder.markdown(
+        flatten_html(
+            f'<div class="pipeline-strip">{rows}</div>'
+        ),
+        unsafe_allow_html=True
+    )
+
+
+# ============================================================
+# HEART DISEASE MODULE
+# ============================================================
+
+if disease == "Heart Disease":
+
+    render_html(
+        """
+        <div class="prediction-section">
+
+            <div class="module-label">
+                01 — Heart Disease
+            </div>
+
+            <div class="module-title">
+                Patient values
+            </div>
+
+            <div class="module-description">
+                Enter the required clinical values to generate a
+                machine learning-based cardiovascular risk estimate.
+            </div>
+
         </div>
         """
+    )
 
-        render_html(f"""
-        <div class="result-card">
-            <div class="result-top">
-                <span>Estimated risk</span>
-                <span>Model v2.3</span>
+    pipeline_placeholder = st.empty()
+
+    render_pipeline_strip(
+        pipeline_placeholder
+    )
+
+    left_col, right_col = st.columns(
+        [1.05, 0.95],
+        gap="large"
+    )
+
+
+    # ========================================================
+    # HEART INPUTS
+    # ========================================================
+
+    with left_col:
+
+        age = st.number_input(
+            "Age, years",
+            min_value=1,
+            max_value=120,
+            value=63,
+            step=1
+        )
+
+        sex = st.number_input(
+            "Sex",
+            min_value=0,
+            max_value=1,
+            value=1,
+            step=1
+        )
+
+        cp = st.number_input(
+            "Chest pain type",
+            min_value=1,
+            max_value=4,
+            value=1,
+            step=1
+        )
+
+        trestbps = st.number_input(
+            "Resting blood pressure, mmHg",
+            min_value=0.0,
+            max_value=300.0,
+            value=145.0,
+            step=1.0
+        )
+
+        chol = st.number_input(
+            "Cholesterol, mg/dL",
+            min_value=0.0,
+            max_value=700.0,
+            value=233.0,
+            step=1.0
+        )
+
+        fbs = st.number_input(
+            "Fasting blood sugar",
+            min_value=0,
+            max_value=1,
+            value=1,
+            step=1
+        )
+
+        restecg = st.number_input(
+            "Resting ECG",
+            min_value=0,
+            max_value=2,
+            value=2,
+            step=1
+        )
+
+
+    with right_col:
+
+        thalach = st.number_input(
+            "Maximum heart rate",
+            min_value=0.0,
+            max_value=250.0,
+            value=150.0,
+            step=1.0
+        )
+
+        exang = st.number_input(
+            "Exercise-induced angina",
+            min_value=0,
+            max_value=1,
+            value=0,
+            step=1
+        )
+
+        oldpeak = st.number_input(
+            "ST depression",
+            min_value=0.0,
+            max_value=10.0,
+            value=2.3,
+            step=0.1
+        )
+
+        slope = st.number_input(
+            "Slope",
+            min_value=1,
+            max_value=3,
+            value=3,
+            step=1
+        )
+
+        ca = st.number_input(
+            "Major vessels",
+            min_value=0,
+            max_value=4,
+            value=0,
+            step=1
+        )
+
+        thal = st.number_input(
+            "Thalassemia",
+            min_value=3,
+            max_value=7,
+            value=6,
+            step=1
+        )
+
+
+    st.write("")
+
+    predict_button = st.button(
+        "Run this screening",
+        type="primary"
+    )
+
+
+    # ========================================================
+    # HEART PREDICTION
+    # ========================================================
+
+    if predict_button:
+
+        input_data = {
+            "age": age,
+            "sex": sex,
+            "cp": cp,
+            "trestbps": trestbps,
+            "chol": chol,
+            "fbs": fbs,
+            "restecg": restecg,
+            "thalach": thalach,
+            "exang": exang,
+            "oldpeak": oldpeak,
+            "slope": slope,
+            "ca": ca,
+            "thal": thal
+        }
+
+        try:
+
+            # ------------------------------------------------
+            # PIPELINE ANIMATION
+            # ------------------------------------------------
+
+            for i in range(len(PIPELINE_STEPS)):
+
+                render_pipeline_strip(
+                    pipeline_placeholder,
+                    active_index=i,
+                    done_until=i - 1
+                )
+
+                time.sleep(0.25)
+
+
+            render_pipeline_strip(
+                pipeline_placeholder,
+                active_index=-1,
+                done_until=len(PIPELINE_STEPS) - 1
+            )
+
+
+            # ------------------------------------------------
+            # MODEL PREDICTION
+            # ------------------------------------------------
+
+            result = predict_heart_disease(
+                input_data
+            )
+
+            prediction = int(
+                result["prediction"]
+            )
+
+            probability = float(
+                result["probability"]
+            )
+
+
+            # ------------------------------------------------
+            # RESULT
+            # ------------------------------------------------
+
+            is_high_risk = prediction == 1
+
+            status_text = (
+                "Higher predicted heart disease risk estimate"
+                if is_high_risk
+                else
+                "Lower predicted heart disease risk estimate"
+            )
+
+            status_class = (
+                "status-high"
+                if is_high_risk
+                else
+                "status-low"
+            )
+
+            fill_color = (
+                "#C56A52"
+                if is_high_risk
+                else
+                "#7E9A78"
+            )
+
+            fill_pct = max(
+                4,
+                min(
+                    100,
+                    round(probability * 100)
+                )
+            )
+
+
+            # ------------------------------------------------
+            # FACTOR ROW
+            # ------------------------------------------------
+
+            def factor_row(
+                label,
+                value_text,
+                is_flag
+            ):
+
+                flag_class = (
+                    "flag-high"
+                    if is_flag
+                    else
+                    "flag-ok"
+                )
+
+                return f"""
+                <div class="factor">
+                    <span>{label}</span>
+                    <span class="{flag_class}">
+                        {value_text}
+                    </span>
+                </div>
+                """
+
+
+            factors_html = "".join([
+
+                factor_row(
+                    "Age",
+                    "Higher age range"
+                    if age >= 60
+                    else "Within lower range",
+                    age >= 60
+                ),
+
+                factor_row(
+                    "Resting blood pressure",
+                    "Above typical range"
+                    if trestbps >= 140
+                    else "Within range",
+                    trestbps >= 140
+                ),
+
+                factor_row(
+                    "Cholesterol",
+                    "Elevated"
+                    if chol >= 240
+                    else "Within range",
+                    chol >= 240
+                ),
+
+                factor_row(
+                    "Maximum heart rate",
+                    "Lower observed value"
+                    if thalach < 120
+                    else "Within observed range",
+                    thalach < 120
+                ),
+
+                factor_row(
+                    "Exercise-induced angina",
+                    "Present"
+                    if exang == 1
+                    else "Not reported",
+                    exang == 1
+                ),
+
+            ])
+
+
+            # ------------------------------------------------
+            # RESULT CARD
+            # ------------------------------------------------
+
+            render_html(
+                f"""
+                <div class="result-card">
+
+                    <div class="result-top">
+                        <span>
+                            Estimated risk
+                        </span>
+
+                        <span>
+                            Heart Disease pipeline
+                        </span>
+                    </div>
+
+
+                    <div class="result-probability">
+                        {probability:.2%}
+                    </div>
+
+
+                    <div class="result-label">
+                        Model probability for the positive class
+                    </div>
+
+
+                    <div class="gauge-bar">
+
+                        <div
+                            class="gauge-fill"
+                            style="
+                                width:{fill_pct}%;
+                                background:{fill_color};
+                            "
+                        ></div>
+
+                    </div>
+
+
+                    <div class="result-status {status_class}">
+                        {status_text}
+                    </div>
+
+
+                    {factors_html}
+
+
+                    <div class="result-note">
+                        This is a statistical model estimate, not a
+                        clinical diagnosis — bring this reading to
+                        a qualified healthcare professional.
+                    </div>
+
+                </div>
+                """
+            )
+
+
+        except Exception as e:
+
+            st.error(
+                f"Heart Disease prediction could not be generated: {e}"
+            )
+
+
+# ============================================================
+# DIABETES MODULE
+# ============================================================
+
+elif disease == "Diabetes":
+
+    render_html(
+        """
+        <div class="prediction-section">
+
+            <div class="module-label">
+                02 — Diabetes
             </div>
-            <div class="result-probability">{pct}%</div>
-            <div class="result-label">likelihood, relative to baseline population</div>
-            <div class="gauge-bar">
-                <div class="gauge-fill" style="width:{pct}%; background:{fill_color};"></div>
+
+            <div class="module-title">
+                Patient values
             </div>
-            <div class="result-status {status_class}">{status_text}</div>
-            {factors_html}
-            <div class="result-note">
-                A statistical estimate, not a diagnosis — bring this reading to a clinician.
+
+            <div class="module-description">
+                Enter the required health-related values to generate a
+                machine learning-based prediction.
             </div>
+
         </div>
-        """)
+        """
+    )
 
-    except Exception as e:
-        st.error(f"Prediction error: {e}")
+
+    pipeline_placeholder = st.empty()
+
+    render_pipeline_strip(
+        pipeline_placeholder
+    )
+
+
+    left_col, right_col = st.columns(
+        [1.05, 0.95],
+        gap="large"
+    )
+
+
+    # ========================================================
+    # DIABETES INPUT FORM
+    # ========================================================
+
+    with left_col:
+
+        pregnancies = st.number_input(
+            "Pregnancies",
+            min_value=0,
+            max_value=20,
+            value=1,
+            step=1
+        )
+
+        age = st.number_input(
+            "Age, years",
+            min_value=1,
+            max_value=120,
+            value=30,
+            step=1
+        )
+
+        glucose = st.number_input(
+            "Glucose",
+            min_value=0.0,
+            max_value=250.0,
+            value=120.0,
+            step=1.0
+        )
+
+        blood_pressure = st.number_input(
+            "Blood Pressure",
+            min_value=0.0,
+            max_value=150.0,
+            value=70.0,
+            step=1.0
+        )
+
+
+    with right_col:
+
+        bmi = st.number_input(
+            "BMI",
+            min_value=0.0,
+            max_value=70.0,
+            value=30.0,
+            step=0.1
+        )
+
+        skin_thickness = st.number_input(
+            "Skin Thickness",
+            min_value=0.0,
+            max_value=100.0,
+            value=25.0,
+            step=1.0
+        )
+
+        insulin = st.number_input(
+            "Insulin",
+            min_value=0.0,
+            max_value=900.0,
+            value=100.0,
+            step=1.0
+        )
+
+        diabetes_pedigree = st.number_input(
+            "Diabetes Pedigree Function",
+            min_value=0.0,
+            max_value=3.0,
+            value=0.45,
+            step=0.01
+        )
+
+
+    st.write("")
+
+    predict_button = st.button(
+        "Run this screening",
+        type="primary"
+    )
+
+
+    # ========================================================
+    # DIABETES PREDICTION
+    # ========================================================
+
+    if predict_button:
+
+        invalid_values = []
+
+        if glucose <= 0:
+            invalid_values.append("Glucose")
+
+        if blood_pressure <= 0:
+            invalid_values.append("Blood Pressure")
+
+        if skin_thickness <= 0:
+            invalid_values.append("Skin Thickness")
+
+        if insulin <= 0:
+            invalid_values.append("Insulin")
+
+        if bmi <= 0:
+            invalid_values.append("BMI")
+
+
+        if invalid_values:
+
+            st.warning(
+                "Please enter valid positive values for: "
+                + ", ".join(invalid_values)
+            )
+
+        else:
+
+            for i in range(
+                len(PIPELINE_STEPS)
+            ):
+
+                render_pipeline_strip(
+                    pipeline_placeholder,
+                    active_index=i,
+                    done_until=i - 1
+                )
+
+                time.sleep(0.25)
+
+
+            render_pipeline_strip(
+                pipeline_placeholder,
+                active_index=-1,
+                done_until=len(PIPELINE_STEPS) - 1
+            )
+
+
+            input_data = {
+                "Pregnancies": pregnancies,
+                "Glucose": glucose,
+                "BloodPressure": blood_pressure,
+                "SkinThickness": skin_thickness,
+                "Insulin": insulin,
+                "BMI": bmi,
+                "DiabetesPedigreeFunction": diabetes_pedigree,
+                "Age": age
+            }
+
+
+            try:
+
+                result = predict_diabetes(
+                    input_data
+                )
+
+                prediction = result["prediction"]
+                probability = result["probability"]
+
+
+                is_high_risk = prediction == 1
+
+                status_text = (
+                    "Higher predicted diabetes risk estimate"
+                    if is_high_risk
+                    else
+                    "Lower predicted diabetes risk estimate"
+                )
+
+                status_class = (
+                    "status-high"
+                    if is_high_risk
+                    else
+                    "status-low"
+                )
+
+                fill_color = (
+                    "#C56A52"
+                    if is_high_risk
+                    else
+                    "#7E9A78"
+                )
+
+                fill_pct = max(
+                    4,
+                    min(
+                        100,
+                        round(probability * 100)
+                    )
+                )
+
+
+                def factor_row(
+                    label,
+                    value_text,
+                    is_flag
+                ):
+
+                    flag_class = (
+                        "flag-high"
+                        if is_flag
+                        else
+                        "flag-ok"
+                    )
+
+                    return f"""
+                    <div class="factor">
+                        <span>{label}</span>
+                        <span class="{flag_class}">
+                            {value_text}
+                        </span>
+                    </div>
+                    """
+
+
+                factors_html = "".join([
+
+                    factor_row(
+                        "Glucose",
+                        "Above typical range"
+                        if glucose >= 140
+                        else "Within range",
+                        glucose >= 140
+                    ),
+
+                    factor_row(
+                        "BMI",
+                        "Contributing factor"
+                        if bmi >= 30
+                        else "Within range",
+                        bmi >= 30
+                    ),
+
+                    factor_row(
+                        "Blood Pressure",
+                        "Above typical range"
+                        if blood_pressure >= 90
+                        else "Within range",
+                        blood_pressure >= 90
+                    ),
+
+                    factor_row(
+                        "Diabetes Pedigree",
+                        "Elevated"
+                        if diabetes_pedigree >= 0.5
+                        else "Within range",
+                        diabetes_pedigree >= 0.5
+                    ),
+
+                ])
+
+
+                render_html(
+                    f"""
+                    <div class="result-card">
+
+                        <div class="result-top">
+                            <span>
+                                Estimated risk
+                            </span>
+
+                            <span>
+                                Diabetes pipeline
+                            </span>
+                        </div>
+
+
+                        <div class="result-probability">
+                            {probability:.2%}
+                        </div>
+
+
+                        <div class="result-label">
+                            Model probability for the positive class
+                        </div>
+
+
+                        <div class="gauge-bar">
+
+                            <div
+                                class="gauge-fill"
+                                style="
+                                    width:{fill_pct}%;
+                                    background:{fill_color};
+                                "
+                            ></div>
+
+                        </div>
+
+
+                        <div class="result-status {status_class}">
+                            {status_text}
+                        </div>
+
+
+                        {factors_html}
+
+
+                        <div class="result-note">
+                            This is a statistical model estimate, not a
+                            clinical diagnosis — bring this reading to
+                            a qualified healthcare professional.
+                        </div>
+
+                    </div>
+                    """
+                )
+
+
+            except Exception as e:
+
+                st.error(
+                    f"Diabetes prediction could not be generated: {e}"
+                )
+
+
+# ============================================================
+# LIVER DISEASE
+# ============================================================
+
+elif disease == "Liver Disease":
+
+    render_html(
+        """
+        <div class="coming-soon">
+
+            <div class="coming-soon-title">
+                Liver Disease
+            </div>
+
+            <div>
+                Risk prediction using biochemical and demographic
+                features.
+            </div>
+
+            <br>
+
+            <div style="color:#D9A441;">
+                Prediction module coming soon.
+            </div>
+
+        </div>
+        """
+    )
+
+
+# ============================================================
+# NO DISEASE SELECTED
+# ============================================================
+
+else:
+
+    render_html(
+        """
+        <div class="coming-soon">
+
+            <div class="coming-soon-title">
+                Select a condition
+            </div>
+
+            <div>
+                Choose a screening module above to begin.
+            </div>
+
+        </div>
+        """
+    )
+
+
+# ============================================================
+# FOOTER
+# ============================================================
+
+render_html(
+    """
+    <div class="footer">
+
+        <strong>Healytics</strong> —
+        AI-Based Multi-Disease Risk Prediction System.
+
+        <br><br>
+
+        Built for educational and decision-support purposes.
+        Model outputs are not medical diagnoses.
+
+    </div>
+    """
+)
