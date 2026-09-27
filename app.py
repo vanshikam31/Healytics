@@ -2307,6 +2307,9 @@ render_html(
         Built for educational and decision-support purposes.
         Model outputs are not medical diagnoses.
 
+        <br><br>
+        Created by Ms. Vanshika Mehra
+
     </div>
     """
 )
