@@ -36,7 +36,7 @@ if PROJECT_ROOT not in sys.path:
 
 from src.prediction.diabetes_predictor import predict_diabetes
 from src.prediction.heart_disease_predictor import predict_heart_disease
-
+from src.prediction.liver_disease_predictor import predict_liver_disease
 
 # ============================================================
 # PAGE CONFIGURATION
@@ -44,7 +44,6 @@ from src.prediction.heart_disease_predictor import predict_heart_disease
 
 st.set_page_config(
     page_title="Healytics",
-    page_icon="💓",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
@@ -89,6 +88,15 @@ render_html(
         display: none;
     }
 
+    .medical-logo {
+        color: var(--gold);
+        font-size: 18px;
+        font-weight: 600;
+        margin-right: 9px;
+        display: inline-flex;
+        align-items: center;
+    }
+
     .block-container {
         max-width: 1080px;
         padding-top: 0;
@@ -103,6 +111,10 @@ render_html(
         text-align: center;
         margin: 30px 0;
         letter-spacing: 1px;
+    }
+
+    header {
+        visibility: hidden;
     }
 
     #MainMenu {
@@ -314,6 +326,24 @@ render_html(
         font-style: italic;
         font-size: 15px;
         color: var(--bone-dim);
+    }
+
+    .disease-icon {
+        width: 46px;
+        height: 46px;
+        border: 1px solid var(--line);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--gold);
+        flex-shrink: 0;
+        margin-right: 22px;
+    }
+
+    .disease-icon svg {
+        width: 25px;
+        height: 25px;
     }
 
     .disease-name {
@@ -778,7 +808,7 @@ render_html(
     <div class="top-nav">
 
         <div class="brand">
-            <span class="brand-mark">⌁</span>
+            <span class="medical-logo">✚</span>
             Healytics
         </div>
 
@@ -906,7 +936,7 @@ render_html(
     </div>
 
     <div class="section-title">
-        Two conditions, one prediction workspace
+        Three conditions, one prediction workspace
     </div>
     """
 )
@@ -918,7 +948,17 @@ render_html(
 
         <div class="disease-row">
 
-            <div class="disease-number">01</div>
+            <div class="disease-icon">
+                    <svg viewBox="0 0 32 32" fill="none">
+                        <path
+                            d="M2 16H8L11 9L15 23L19 5L22 16H30"
+                            stroke="currentColor"
+                            stroke-width="1.8"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                    </svg>
+                </div>
 
             <div>
                 <div class="disease-name">
@@ -940,7 +980,21 @@ render_html(
 
         <div class="disease-row">
 
-            <div class="disease-number">02</div>
+            <div class="disease-icon">
+                <svg viewBox="0 0 32 32" fill="none">
+                    <path
+                        d="M16 3C16 3 8 12 8 18C8 23 11.6 27 16 27C20.4 27 24 23 24 18C24 12 16 3 16 3Z"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                    />
+                    <path
+                        d="M12 19C12.7 21.5 14 22.5 16 23"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                    />
+                </svg>
+            </div>
 
             <div>
                 <div class="disease-name">
@@ -962,7 +1016,22 @@ render_html(
 
         <div class="disease-row">
 
-            <div class="disease-number">03</div>
+            <div class="disease-icon">
+                <svg viewBox="0 0 32 32" fill="none">
+                    <path
+                        d="M5 10C8 6 13 5 18 6C23 7 27 10 27 15C27 21 23 25 17 26H9C5 26 3 23 3 19C3 15 3 12 5 10Z"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                        stroke-linejoin="round"
+                    />
+                    <path
+                        d="M17 7C16 12 14 16 10 18C8 19 6 19 4 19"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                    />
+                </svg>
+            </div>
 
             <div>
                 <div class="disease-name">
@@ -974,8 +1043,8 @@ render_html(
                 </div>
             </div>
 
-            <div class="disease-meta">
-                Coming soon<br>
+            <div class="disease-meta available">
+                Available<br>
                 10 inputs
             </div>
 
@@ -1867,31 +1936,337 @@ elif disease == "Diabetes":
 # LIVER DISEASE
 # ============================================================
 
+# ============================================================
+# LIVER DISEASE MODULE
+# ============================================================
+
 elif disease == "Liver Disease":
 
     render_html(
         """
-        <div class="coming-soon">
+        <div class="prediction-section">
 
-            <div class="coming-soon-title">
-                Liver Disease
+            <div class="module-label">
+                03 — Liver Disease
             </div>
 
-            <div>
-                Risk prediction using biochemical and demographic
-                features.
+            <div class="module-title">
+                Patient values
             </div>
 
-            <br>
-
-            <div style="color:#D9A441;">
-                Prediction module coming soon.
+            <div class="module-description">
+                Enter the required biochemical and demographic values
+                to generate a machine learning-based prediction.
             </div>
 
         </div>
         """
     )
 
+    pipeline_placeholder = st.empty()
+
+    render_pipeline_strip(
+        pipeline_placeholder
+    )
+
+    left_col, right_col = st.columns(
+        [1.05, 0.95],
+        gap="large"
+    )
+
+    # ========================================================
+    # LIVER INPUTS
+    # ========================================================
+
+    with left_col:
+
+        liver_age = st.number_input(
+            "Age, years",
+            min_value=1,
+            max_value=120,
+            value=45,
+            step=1
+        )
+
+        liver_gender = st.selectbox(
+            "Gender",
+            ["Male", "Female"]
+        )
+
+        total_bilirubin = st.number_input(
+            "Total Bilirubin",
+            min_value=0.0,
+            max_value=100.0,
+            value=1.0,
+            step=0.1
+        )
+
+        direct_bilirubin = st.number_input(
+            "Direct Bilirubin",
+            min_value=0.0,
+            max_value=25.0,
+            value=0.3,
+            step=0.1
+        )
+
+        alkaline_phosphotase = st.number_input(
+            "Alkaline Phosphotase",
+            min_value=0,
+            max_value=2500,
+            value=200,
+            step=1
+        )
+
+    with right_col:
+
+        alamine_aminotransferase = st.number_input(
+            "Alamine Aminotransferase",
+            min_value=0,
+            max_value=3000,
+            value=35,
+            step=1
+        )
+
+        aspartate_aminotransferase = st.number_input(
+            "Aspartate Aminotransferase",
+            min_value=0,
+            max_value=5000,
+            value=40,
+            step=1
+        )
+
+        total_proteins = st.number_input(
+            "Total Proteins",
+            min_value=0.0,
+            max_value=15.0,
+            value=6.5,
+            step=0.1
+        )
+
+        albumin = st.number_input(
+            "Albumin",
+            min_value=0.0,
+            max_value=8.0,
+            value=3.2,
+            step=0.1
+        )
+
+        albumin_and_globulin_ratio = st.number_input(
+            "Albumin and Globulin Ratio",
+            min_value=0.0,
+            max_value=5.0,
+            value=0.9,
+            step=0.01
+        )
+
+    st.write("")
+
+    liver_predict_button = st.button(
+        "Run Liver Disease Prediction",
+        type="primary"
+    )
+
+    # ========================================================
+    # LIVER PREDICTION
+    # ========================================================
+
+    if liver_predict_button:
+
+        try:
+            # ------------------------------------------------
+            # PIPELINE ANIMATION
+            # ------------------------------------------------
+            for i in range(len(PIPELINE_STEPS)):
+                render_pipeline_strip(
+                    pipeline_placeholder,
+                    active_index=i,
+                    done_until=i - 1
+                )
+                time.sleep(0.25)
+
+            render_pipeline_strip(
+                pipeline_placeholder,
+                active_index=-1,
+                done_until=len(PIPELINE_STEPS) - 1
+            )
+
+            # ------------------------------------------------
+            # MODEL PREDICTION
+            # ------------------------------------------------
+            result = predict_liver_disease(
+                age=liver_age,
+                gender=liver_gender,
+                total_bilirubin=total_bilirubin,
+                direct_bilirubin=direct_bilirubin,
+                alkaline_phosphotase=alkaline_phosphotase,
+                alamine_aminotransferase=alamine_aminotransferase,
+                aspartate_aminotransferase=aspartate_aminotransferase,
+                total_proteins=total_proteins,
+                albumin=albumin,
+                albumin_and_globulin_ratio=albumin_and_globulin_ratio
+            )
+
+            prediction = int(result["prediction"])
+
+            # Support either key name used by the predictor.
+            if "risk_probability" in result:
+                probability = float(result["risk_probability"])
+            else:
+                probability = float(result["probability"])
+
+            # ------------------------------------------------
+            # RESULT STATE
+            # Selector 1 = Liver Disease
+            # Selector 2 = No Liver Disease
+            # ------------------------------------------------
+            is_high_risk = prediction == 1
+
+            status_text = (
+                "Higher predicted liver disease risk estimate"
+                if is_high_risk
+                else
+                "Lower predicted liver disease risk estimate"
+            )
+
+            status_class = (
+                "status-high"
+                if is_high_risk
+                else
+                "status-low"
+            )
+
+            fill_color = (
+                "#C56A52"
+                if is_high_risk
+                else
+                "#7E9A78"
+            )
+
+            fill_pct = max(
+                4,
+                min(100, round(probability * 100))
+            )
+
+            # ------------------------------------------------
+            # FACTOR ROW
+            # ------------------------------------------------
+            def liver_factor_row(label, value_text, is_flag):
+                flag_class = (
+                    "flag-high"
+                    if is_flag
+                    else
+                    "flag-ok"
+                )
+
+                return f"""
+                <div class="factor">
+                    <span>{label}</span>
+                    <span class="{flag_class}">
+                        {value_text}
+                    </span>
+                </div>
+                """
+
+            factors_html = "".join([
+                liver_factor_row(
+                    "Total Bilirubin",
+                    "Elevated"
+                    if total_bilirubin > 1.2
+                    else "Within range",
+                    total_bilirubin > 1.2
+                ),
+                liver_factor_row(
+                    "Direct Bilirubin",
+                    "Elevated"
+                    if direct_bilirubin > 0.3
+                    else "Within range",
+                    direct_bilirubin > 0.3
+                ),
+                liver_factor_row(
+                    "Alkaline Phosphotase",
+                    "Elevated"
+                    if alkaline_phosphotase > 300
+                    else "Within range",
+                    alkaline_phosphotase > 300
+                ),
+                liver_factor_row(
+                    "ALT",
+                    "Elevated"
+                    if alamine_aminotransferase > 40
+                    else "Within range",
+                    alamine_aminotransferase > 40
+                ),
+                liver_factor_row(
+                    "AST",
+                    "Elevated"
+                    if aspartate_aminotransferase > 40
+                    else "Within range",
+                    aspartate_aminotransferase > 40
+                ),
+                liver_factor_row(
+                    "Albumin",
+                    "Lower range"
+                    if albumin < 3.5
+                    else "Within range",
+                    albumin < 3.5
+                ),
+            ])
+
+            # ------------------------------------------------
+            # RESULT CARD
+            # ------------------------------------------------
+            render_html(
+                f"""
+                <div class="result-card">
+
+                    <div class="result-top">
+                        <span>
+                            Estimated risk
+                        </span>
+
+                        <span>
+                            Liver Disease pipeline
+                        </span>
+                    </div>
+
+                    <div class="result-probability">
+                        {probability:.2%}
+                    </div>
+
+                    <div class="result-label">
+                        Model probability for the predicted class
+                    </div>
+
+                    <div class="gauge-bar">
+                        <div
+                            class="gauge-fill"
+                            style="
+                                width:{fill_pct}%;
+                                background:{fill_color};
+                            "
+                        ></div>
+                    </div>
+
+                    <div class="result-status {status_class}">
+                        {status_text}
+                    </div>
+
+                    {factors_html}
+
+                    <div class="result-note">
+                        This is a statistical model estimate, not a
+                        clinical diagnosis — bring this reading to
+                        a qualified healthcare professional.
+                    </div>
+
+                </div>
+                """
+            )
+
+        except Exception as e:
+            st.error(
+                f"Liver Disease prediction could not be generated: {e}"
+            )
 
 # ============================================================
 # NO DISEASE SELECTED
