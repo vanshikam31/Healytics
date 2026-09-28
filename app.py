@@ -147,6 +147,14 @@ render_html(
         margin-bottom: 80px;
     }
 
+    .model-accuracy {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
+        font-size: 12px;
+        color: var(--bone-dim);
+    }
+
     .brand {
         font-family: 'Fraunces', serif;
         font-size: 22px;
@@ -1528,6 +1536,9 @@ if disease == "Heart Disease":
                         </span>
                     </div>
 
+                    <div class="model-accuracy">
+                        Model test accuracy: {MODEL_ACCURACIES[disease]:.2f}%
+                    </div>
 
                     <div class="result-probability">
                         {probability:.2%}
