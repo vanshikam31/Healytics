@@ -1516,6 +1516,11 @@ if disease == "Heart Disease":
                 ),
 
             ])
+            MODEL_ACCURACIES = {
+                "Heart Disease": 88.52,
+                "Diabetes": None,
+                "Liver Disease": 72.81,
+            }
 
 
             # ------------------------------------------------
@@ -1615,7 +1620,7 @@ elif disease == "Diabetes":
         </div>
         """
     )
-
+    
 
     pipeline_placeholder = st.empty()
 
